@@ -1,0 +1,38 @@
+name: flutter_deepseek
+description: >
+  The complete DeepSeek API client for Flutter. True token-by-token
+  streaming, all models including deepseek-reasoner, function calling,
+  conversation management, and a Flutter-idiomatic API.
+  Production-ready and actively maintained.
+version: 0.1.0
+homepage: https://github.com/HammadAhmad200/flutter_deepseek
+repository: https://github.com/HammadAhmad200/flutter_deepseek
+issue_tracker: https://github.com/HammadAhmad200/flutter_deepseek/issues
+documentation: https://github.com/HammadAhmad200/flutter_deepseek#readme
+
+screenshots:
+  - description: Example chat app with streaming enabled and BYOK API key field.
+    path: doc/screenshots/chat_streaming.png
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: '>=3.10.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  mocktail: ^1.0.4
+
+topics:
+  - deepseek
+  - ai
+  - llm
+  - streaming
+  - dart
+  - flutter

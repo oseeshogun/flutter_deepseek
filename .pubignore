@@ -1,0 +1,21 @@
+# Root app scaffold (package code lives in lib/; demo in example/)
+android/
+ios/
+linux/
+macos/
+windows/
+web/
+.metadata
+.idea/
+*.iml
+build/
+.dart_tool/
+**/build/
+**/.dart_tool/
+example/android/
+example/ios/
+example/linux/
+example/macos/
+example/windows/
+example/web/
+PUBLISH_TO_PUB_DEV.md

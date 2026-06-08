@@ -13,7 +13,7 @@ The complete DeepSeek API client for Flutter — true token-by-token streaming, 
 
 ![Example app — streaming chat with BYOK](https://raw.githubusercontent.com/HammadAhmad200/flutter_deepseek/main/doc/screenshots/chat_streaming.png)
 
-> Replace this with a real screen recording GIF after you run the example app — see [doc/media/HOW_TO_RECORD.md](doc/media/HOW_TO_RECORD.md). On pub.dev, use a GitHub `raw` URL once `doc/media/demo.gif` is committed.
+
 
 ## Table of contents
 

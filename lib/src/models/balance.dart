@@ -1,4 +1,6 @@
+/// Account balance returned by `GET /user/balance`.
 class UserBalance {
+  /// Creates a balance snapshot.
   const UserBalance({
     required this.currency,
     required this.totalBalance,
@@ -6,6 +8,7 @@ class UserBalance {
     required this.toppedUpBalance,
   });
 
+  /// Parses balance JSON from the DeepSeek API.
   factory UserBalance.fromJson(Map<String, dynamic> json) {
     final balanceInfos = json['balance_infos'] as List<dynamic>?;
     if (balanceInfos != null && balanceInfos.isNotEmpty) {
@@ -32,8 +35,15 @@ class UserBalance {
     return 0;
   }
 
+  /// Currency code, e.g. `USD`.
   final String currency;
+
+  /// Total available balance.
   final double totalBalance;
+
+  /// Granted promotional balance.
   final double grantedBalance;
+
+  /// Topped-up prepaid balance.
   final double toppedUpBalance;
 }

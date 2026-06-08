@@ -4,6 +4,7 @@ import '../models/stream_chunk.dart';
 
 /// Parses Server-Sent Events lines from DeepSeek streaming responses.
 class SseParser {
+  /// Creates an SSE parser.
   const SseParser();
 
   /// Parses a single SSE `data:` payload (without the `data: ` prefix).

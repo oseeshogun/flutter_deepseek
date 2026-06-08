@@ -1,14 +1,14 @@
-/// The complete DeepSeek API client for Flutter.
+/// DeepSeek API client for Flutter.
+///
+/// Create a [DeepSeekClient] with your API key, then call [DeepSeekClient.chat]
+/// or [DeepSeekClient.chatStream]. See the README for BYOK and examples.
 library flutter_deepseek;
 
 export 'src/client/deepseek_client.dart';
 export 'src/client/deepseek_config.dart';
 export 'src/exceptions/auth_exception.dart';
 export 'src/exceptions/deepseek_exception.dart'
-    show
-        DeepSeekException,
-        DeepSeekRequestException,
-        DeepSeekServerException;
+    show DeepSeekException, DeepSeekRequestException, DeepSeekServerException;
 export 'src/exceptions/network_exception.dart';
 export 'src/exceptions/rate_limit_exception.dart';
 export 'src/models/balance.dart';

@@ -1,4 +1,6 @@
+/// A chat message in a DeepSeek conversation.
 class ChatMessage {
+  /// Creates a message with the given [role] and [content].
   const ChatMessage({
     required this.role,
     required this.content,
@@ -7,15 +9,19 @@ class ChatMessage {
     this.reasoningContent,
   });
 
+  /// User message factory.
   factory ChatMessage.user(String content) =>
       ChatMessage(role: 'user', content: content);
 
+  /// Assistant message factory.
   factory ChatMessage.assistant(String content) =>
       ChatMessage(role: 'assistant', content: content);
 
+  /// System message factory.
   factory ChatMessage.system(String content) =>
       ChatMessage(role: 'system', content: content);
 
+  /// Parses a message from DeepSeek JSON.
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     return ChatMessage(
       role: json['role'] as String? ?? 'user',
@@ -26,12 +32,22 @@ class ChatMessage {
     );
   }
 
+  /// Message role: `user`, `assistant`, `system`, or `tool`.
   final String role;
+
+  /// Text content of the message.
   final String content;
+
+  /// Tool call id when [role] is `tool`.
   final String? toolCallId;
+
+  /// Optional participant name.
   final String? name;
+
+  /// Chain-of-thought text for the reasoner model.
   final String? reasoningContent;
 
+  /// Serializes this message for the API request body.
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{
       'role': role,

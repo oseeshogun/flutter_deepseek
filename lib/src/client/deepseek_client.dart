@@ -19,8 +19,11 @@ import 'deepseek_config.dart';
 
 export '../models/model_info.dart' show DeepSeekModel;
 
-/// Client for the DeepSeek API.
+/// Client for the DeepSeek chat completions and utility API.
 class DeepSeekClient {
+  /// Creates a client.
+  ///
+  /// Pass [httpClient] to inject a mock in tests. Call [dispose] when done.
   DeepSeekClient({
     required String apiKey,
     String baseUrl = 'https://api.deepseek.com',
@@ -88,6 +91,7 @@ class DeepSeekClient {
     return request.toJson();
   }
 
+  /// Sends a non-streaming chat completion request.
   Future<ChatCompletionResponse> chat({
     required List<ChatMessage> messages,
     String model = DeepSeekModel.chat,
@@ -137,6 +141,7 @@ class DeepSeekClient {
     }
   }
 
+  /// Streams assistant text token-by-token as each SSE chunk arrives.
   Stream<String> chatStream({
     required List<ChatMessage> messages,
     String model = DeepSeekModel.chat,
@@ -203,6 +208,7 @@ class DeepSeekClient {
     }
   }
 
+  /// Runs [DeepSeekModel.reasoner] and splits reasoning from the final answer.
   Future<ReasonerResponse> reason({
     required String prompt,
     int? maxTokens,
@@ -223,6 +229,7 @@ class DeepSeekClient {
     );
   }
 
+  /// Lists models available to your API key.
   Future<List<ModelInfo>> listModels() async {
     try {
       final response = await _httpClient
@@ -252,6 +259,7 @@ class DeepSeekClient {
     }
   }
 
+  /// Returns the current account balance.
   Future<UserBalance> getBalance() async {
     try {
       final response = await _httpClient
@@ -278,6 +286,7 @@ class DeepSeekClient {
     }
   }
 
+  /// Closes the owned [http.Client] when this client created it.
   void dispose() {
     if (_ownsClient) {
       _httpClient.close();

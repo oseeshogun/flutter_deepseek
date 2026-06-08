@@ -1,10 +1,6 @@
 name: flutter_deepseek
-description: >
-  The complete DeepSeek API client for Flutter. True token-by-token
-  streaming, all models including deepseek-reasoner, function calling,
-  conversation management, and a Flutter-idiomatic API.
-  Production-ready and actively maintained.
-version: 0.1.0
+description: DeepSeek API client for Flutter with SSE streaming, reasoner model, function calling, and typed errors. BYOK.
+version: 0.1.1
 homepage: https://github.com/HammadAhmad200/flutter_deepseek
 repository: https://github.com/HammadAhmad200/flutter_deepseek
 issue_tracker: https://github.com/HammadAhmad200/flutter_deepseek/issues
@@ -34,5 +30,4 @@ topics:
   - ai
   - llm
   - streaming
-  - dart
   - flutter

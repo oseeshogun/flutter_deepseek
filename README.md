@@ -11,7 +11,7 @@ The complete DeepSeek API client for Flutter — true token-by-token streaming, 
 
 ## Demo
 
-![Example app — streaming chat with BYOK](https://raw.githubusercontent.com/HammadAhmad200/flutter_deepseek/main/doc/screenshots/chat_streaming.png)
+![Example app — streaming chat with BYOK](https://github.com/user-attachments/assets/734289ba-7aaf-48c4-8206-6c49397334b7)
 
 
 

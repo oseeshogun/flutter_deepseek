@@ -33,6 +33,14 @@ Turn on capture overlays (badge, code strip, compact layout, blinking stream cur
 
 Then record **5–10s of video** while a reply is **still streaming** (partial text + blinking `▍`).
 
+## Web search
+
+Tap the **Search** chip to let the model call `web_search` through
+`chatWithTools` and `WebToolExecutor`. Each search shows up as an italic status
+line before the answer. Search is non-streaming, so **Stream** is disabled while
+it is on, and it is unavailable for the reasoner model. DeepSeek bills each
+search to your account.
+
 ## Recording tips
 
 - **Video first** — stream a prompt live; pause mid-response for screenshots.
@@ -45,5 +53,5 @@ Then record **5–10s of video** while a reply is **still streaming** (partial t
 Uses `flutter_deepseek` via path `../` while developing the monorepo. For a standalone clone, switch `pubspec.yaml` to:
 
 ```yaml
-flutter_deepseek: ^0.1.1
+flutter_deepseek: ^0.1.2
 ```

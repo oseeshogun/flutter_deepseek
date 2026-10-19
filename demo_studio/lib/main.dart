@@ -29,7 +29,7 @@ class StudioDemoApp extends StatelessWidget {
       title: 'flutter_deepseek Studio',
       debugShowCheckedModeBanner: false,
       theme: buildStudioTheme(),
-      home: ChatScreen(initialRecordMode: _recordMode),
+      home: const ChatScreen(initialRecordMode: _recordMode),
     );
   }
 }

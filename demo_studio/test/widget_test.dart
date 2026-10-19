@@ -6,4 +6,9 @@ void main() {
     await tester.pumpWidget(const StudioDemoApp());
     expect(find.text('DeepSeek Studio'), findsOneWidget);
   });
+
+  testWidgets('web search chip is shown', (WidgetTester tester) async {
+    await tester.pumpWidget(const StudioDemoApp());
+    expect(find.text('Search'), findsOneWidget);
+  });
 }

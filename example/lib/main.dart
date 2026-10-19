@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_deepseek/flutter_deepseek.dart';
 
@@ -36,6 +38,7 @@ class _ChatScreenState extends State<ChatScreen> {
   DeepSeekClient? _client;
   String _selectedModel = DeepSeekModel.chat;
   bool _streaming = true;
+  bool _webSearch = false;
   bool _loading = false;
 
   final List<_ChatBubble> _messages = [];
@@ -106,6 +109,28 @@ class _ChatScreenState extends State<ChatScreen> {
           }
           _loading = false;
         });
+      } else if (_webSearch) {
+        // Non-streaming tool loop: the model may call web_search before answering.
+        await for (final event in client.chatWithTools(
+          messages: [ChatMessage.user(text)],
+          executor: WebToolExecutor(client),
+          model: _selectedModel,
+        )) {
+          if (!mounted) return;
+          switch (event) {
+            case ToolCallRequested(:final call):
+              setState(
+                  () => _messages.add(_ChatBubble.status(_describe(call))));
+            case ToolCallCompleted():
+              break;
+            case ChatAnswer(text: final answer):
+              setState(() {
+                _messages.add(_ChatBubble.assistant(answer));
+                _loading = false;
+              });
+          }
+          _scrollToBottom();
+        }
       } else if (_streaming) {
         setState(() {
           _messages.add(_ChatBubble.assistant('', streaming: true));
@@ -158,6 +183,15 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollToBottom();
   }
 
+  String _describe(ToolCall call) {
+    try {
+      final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
+      return 'Searching the web: ${args['query']}';
+    } catch (_) {
+      return 'Calling ${call.function.name}…';
+    }
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
@@ -175,7 +209,7 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(
         title: const Text('flutter_deepseek'),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(112),
+          preferredSize: const Size.fromHeight(152),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Column(
@@ -219,18 +253,27 @@ class _ChatScreenState extends State<ChatScreen> {
                               },
                       ),
                     ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text('Stream'),
+                    Switch(
+                      value: _streaming,
+                      onChanged: _loading ||
+                              _selectedModel == DeepSeekModel.reasoner ||
+                              _webSearch
+                          ? null
+                          : (v) => setState(() => _streaming = v),
+                    ),
                     const SizedBox(width: 12),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text('Stream'),
-                        Switch(
-                          value: _streaming,
-                          onChanged: _loading || _selectedModel == DeepSeekModel.reasoner
+                    const Text('Web search'),
+                    Switch(
+                      value: _webSearch,
+                      onChanged:
+                          _loading || _selectedModel == DeepSeekModel.reasoner
                               ? null
-                              : (v) => setState(() => _streaming = v),
-                        ),
-                      ],
+                              : (v) => setState(() => _webSearch = v),
                     ),
                   ],
                 ),
@@ -264,9 +307,13 @@ class _ChatScreenState extends State<ChatScreen> {
                     decoration: BoxDecoration(
                       color: bubble.isUser
                           ? Theme.of(context).colorScheme.primaryContainer
-                          : bubble.isReasoner
-                              ? Colors.amber.shade50
-                              : Theme.of(context).colorScheme.surfaceContainerHighest,
+                          : bubble.isStatus
+                              ? Colors.blueGrey.shade50
+                              : bubble.isReasoner
+                                  ? Colors.amber.shade50
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
@@ -339,7 +386,11 @@ class _ChatBubble {
     required this.isUser,
     this.streaming = false,
     this.isReasoner = false,
+    this.isStatus = false,
   });
+
+  factory _ChatBubble.status(String text) =>
+      _ChatBubble._(text: text, isUser: false, isStatus: true);
 
   factory _ChatBubble.user(String text) =>
       _ChatBubble._(text: text, isUser: true);
@@ -360,4 +411,5 @@ class _ChatBubble {
   final bool isUser;
   final bool streaming;
   final bool isReasoner;
+  final bool isStatus;
 }

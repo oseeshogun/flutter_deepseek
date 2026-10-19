@@ -1,3 +1,5 @@
+import 'function_call.dart';
+
 /// A chat message in a DeepSeek conversation.
 class ChatMessage {
   /// Creates a message with the given [role] and [content].
@@ -7,6 +9,7 @@ class ChatMessage {
     this.toolCallId,
     this.name,
     this.reasoningContent,
+    this.toolCalls,
   });
 
   /// User message factory.
@@ -16,6 +19,19 @@ class ChatMessage {
   /// Assistant message factory.
   factory ChatMessage.assistant(String content) =>
       ChatMessage(role: 'assistant', content: content);
+
+  /// Tool result message answering the call identified by [toolCallId].
+  factory ChatMessage.tool({
+    required String toolCallId,
+    required String content,
+    String? name,
+  }) =>
+      ChatMessage(
+        role: 'tool',
+        content: content,
+        toolCallId: toolCallId,
+        name: name,
+      );
 
   /// System message factory.
   factory ChatMessage.system(String content) =>
@@ -29,6 +45,9 @@ class ChatMessage {
       toolCallId: json['tool_call_id'] as String?,
       name: json['name'] as String?,
       reasoningContent: json['reasoning_content'] as String?,
+      toolCalls: (json['tool_calls'] as List<dynamic>?)
+          ?.map((c) => ToolCall.fromJson(c as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -47,6 +66,12 @@ class ChatMessage {
   /// Chain-of-thought text for the reasoner model.
   final String? reasoningContent;
 
+  /// Tool calls requested by the assistant, if any.
+  ///
+  /// An assistant message carrying tool calls must be sent back in the
+  /// history, followed by one [ChatMessage.tool] per call.
+  final List<ToolCall>? toolCalls;
+
   /// Serializes this message for the API request body.
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{
@@ -57,6 +82,9 @@ class ChatMessage {
     if (name != null) map['name'] = name;
     if (reasoningContent != null) {
       map['reasoning_content'] = reasoningContent;
+    }
+    if (toolCalls != null && toolCalls!.isNotEmpty) {
+      map['tool_calls'] = toolCalls!.map((c) => c.toJson()).toList();
     }
     return map;
   }

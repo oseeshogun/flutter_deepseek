@@ -17,6 +17,8 @@ export 'src/models/message.dart';
 export 'src/models/model_info.dart';
 export 'src/models/request.dart';
 export 'src/models/response.dart';
+export 'src/models/search.dart';
 export 'src/models/stream_chunk.dart';
 export 'src/models/usage.dart';
+export 'src/tools/tool_executor.dart';
 export 'src/utils/sse_parser.dart';

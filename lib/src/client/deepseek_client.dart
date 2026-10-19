@@ -14,6 +14,7 @@ import '../models/message.dart';
 import '../models/model_info.dart';
 import '../models/request.dart';
 import '../models/response.dart';
+import '../models/search.dart';
 import '../utils/sse_parser.dart';
 import 'deepseek_config.dart';
 
@@ -275,6 +276,63 @@ class DeepSeekClient {
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       return UserBalance.fromJson(json);
+    } on DeepSeekException {
+      rethrow;
+    } on SocketException catch (e) {
+      throw DeepSeekNetworkException(e.message);
+    } on TimeoutException {
+      throw DeepSeekNetworkException('Request timed out');
+    } on http.ClientException catch (e) {
+      throw DeepSeekNetworkException(e.message);
+    }
+  }
+
+  /// Searches the web with DeepSeek's server-side search.
+  ///
+  /// [query] must be 1-128 characters and [count] between 1 and 50. Set
+  /// [needContent] to also receive each page's content. Successful requests
+  /// are billed by DeepSeek.
+  Future<SearchResponse> search(
+    String query, {
+    int count = 10,
+    bool needContent = false,
+    String? oriQuestion,
+    String? localization,
+  }) async {
+    final json = await _postJson('/v1/tools/search', {
+      'query': query,
+      'count': count,
+      'need_content': needContent,
+      if (oriQuestion != null) 'ori_question': oriQuestion,
+      if (localization != null) 'localization': localization,
+    });
+    return SearchResponse.fromJson(json);
+  }
+
+  /// Fetches [url] (HTTP or HTTPS, at most 8192 characters) as Markdown.
+  Future<FetchResponse> fetch(String url) async {
+    final json = await _postJson('/v1/tools/fetch', {'url': url});
+    return FetchResponse.fromJson(json);
+  }
+
+  Future<Map<String, dynamic>> _postJson(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      final response = await _httpClient
+          .post(
+            Uri.parse('$_baseUrl$path'),
+            headers: _authHeaders,
+            body: jsonEncode(body),
+          )
+          .timeout(_config.timeout);
+
+      if (response.statusCode != 200) {
+        _handleError(response.statusCode, response.body);
+      }
+
+      return jsonDecode(response.body) as Map<String, dynamic>;
     } on DeepSeekException {
       rethrow;
     } on SocketException catch (e) {

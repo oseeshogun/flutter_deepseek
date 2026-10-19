@@ -182,3 +182,32 @@ class WebToolExecutor implements ToolExecutor {
 
   String _error(String message) => jsonEncode({'error': message});
 }
+
+/// Combines several [ToolExecutor]s into one, so a model can use all of their
+/// tools in the same conversation.
+///
+/// A call goes to the first executor that declares a tool with that name.
+class CompositeToolExecutor implements ToolExecutor {
+  /// Creates an executor delegating to [executors].
+  const CompositeToolExecutor(this.executors);
+
+  /// The executors, in priority order.
+  final List<ToolExecutor> executors;
+
+  @override
+  List<DeepSeekTool> get tools => [
+        for (final executor in executors) ...executor.tools,
+      ];
+
+  @override
+  Future<String> execute(ToolCall call) {
+    for (final executor in executors) {
+      if (executor.tools.any((t) => t.function.name == call.function.name)) {
+        return executor.execute(call);
+      }
+    }
+    return Future.value(
+      jsonEncode({'error': 'Unknown tool "${call.function.name}".'}),
+    );
+  }
+}

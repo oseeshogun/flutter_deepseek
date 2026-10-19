@@ -15,6 +15,8 @@ ToolCall call(String name, String arguments, {String id = 'call_1'}) =>
     );
 
 void main() {
+  compositeTests();
+
   late MockHttpClient mockClient;
   late DeepSeekClient client;
 
@@ -168,6 +170,45 @@ void main() {
             .execute(call('web_search', '{"query":"x"}')),
         throwsA(isA<DeepSeekAuthException>()),
       );
+    });
+  });
+}
+
+class _StubExecutor implements ToolExecutor {
+  _StubExecutor(this.name);
+  final String name;
+
+  @override
+  List<DeepSeekTool> get tools => [
+        DeepSeekTool(
+          function: FunctionDefinition(
+            name: name,
+            description: 'stub',
+            parameters: const {'type': 'object'},
+          ),
+        ),
+      ];
+
+  @override
+  Future<String> execute(ToolCall call) async => 'ran $name';
+}
+
+void compositeTests() {
+  group('CompositeToolExecutor', () {
+    final composite =
+        CompositeToolExecutor([_StubExecutor('a'), _StubExecutor('b')]);
+
+    test('merges the tools of all executors', () {
+      expect(composite.tools.map((t) => t.function.name), ['a', 'b']);
+    });
+
+    test('routes a call to the executor that owns the tool', () async {
+      expect(await composite.execute(call('b', '{}')), 'ran b');
+    });
+
+    test('returns an error for an unknown tool', () async {
+      final out = jsonDecode(await composite.execute(call('zzz', '{}'))) as Map;
+      expect(out['error'], contains('Unknown tool'));
     });
   });
 }

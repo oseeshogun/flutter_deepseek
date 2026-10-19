@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_deepseek/flutter_deepseek.dart';
 
@@ -24,6 +26,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   String _model = DeepSeekModel.chat;
   bool _streaming = true;
+  bool _webSearch = false;
   bool _busy = false;
   late bool _recordMode;
 
@@ -84,6 +87,27 @@ class _ChatScreenState extends State<ChatScreen> {
           );
           _busy = false;
         });
+      } else if (_webSearch) {
+        // Tool loop is non-streaming: the model may call web_search first.
+        await for (final event in _client.chatWithTools(
+          messages: [ChatMessage.user(text)],
+          executor: WebToolExecutor(_client),
+          model: _model,
+        )) {
+          if (!mounted) return;
+          switch (event) {
+            case ToolCallRequested(:final call):
+              setState(() => _messages.add(_Message.status(_describe(call))));
+            case ToolCallCompleted():
+              break;
+            case ChatAnswer(text: final answer):
+              setState(() {
+                _messages.add(_Message.assistant(answer));
+                _busy = false;
+              });
+          }
+          _scrollToEnd();
+        }
       } else if (_streaming) {
         setState(() => _messages.add(_Message.assistant('', streaming: true)));
         final buffer = StringBuffer();
@@ -128,6 +152,15 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     _scrollToEnd();
+  }
+
+  String _describe(ToolCall call) {
+    try {
+      final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
+      return 'Searching the web: ${args['query']}';
+    } catch (_) {
+      return 'Calling ${call.function.name}…';
+    }
   }
 
   void _snack(String message) {
@@ -179,11 +212,13 @@ class _ChatScreenState extends State<ChatScreen> {
                   _Header(
                     model: _model,
                     streaming: _streaming,
+                    webSearch: _webSearch,
                     busy: _busy,
                     recordMode: _recordMode,
                     compact: compact,
                     onModelChanged: (m) => setState(() => _model = m),
                     onStreamingChanged: (v) => setState(() => _streaming = v),
+                    onWebSearchChanged: (v) => setState(() => _webSearch = v),
                     onRecordModeToggle: () =>
                         setState(() => _recordMode = !_recordMode),
                   ),
@@ -242,21 +277,25 @@ class _Header extends StatelessWidget {
   const _Header({
     required this.model,
     required this.streaming,
+    required this.webSearch,
     required this.busy,
     required this.recordMode,
     required this.compact,
     required this.onModelChanged,
     required this.onStreamingChanged,
+    required this.onWebSearchChanged,
     required this.onRecordModeToggle,
   });
 
   final String model;
   final bool streaming;
+  final bool webSearch;
   final bool busy;
   final bool recordMode;
   final bool compact;
   final ValueChanged<String> onModelChanged;
   final ValueChanged<bool> onStreamingChanged;
+  final ValueChanged<bool> onWebSearchChanged;
   final VoidCallback onRecordModeToggle;
 
   @override
@@ -315,9 +354,8 @@ class _Header extends StatelessWidget {
                 onPressed: onRecordModeToggle,
                 icon: Icon(
                   recordMode ? Icons.videocam : Icons.videocam_outlined,
-                  color: recordMode
-                      ? StudioColors.accent
-                      : StudioColors.textMuted,
+                  color:
+                      recordMode ? StudioColors.accent : StudioColors.textMuted,
                 ),
               ),
             ],
@@ -335,9 +373,19 @@ class _Header extends StatelessWidget {
               _StreamChip(
                 enabled: streaming,
                 glow: streaming,
-                onChanged: busy || model == DeepSeekModel.reasoner
+                onChanged: busy || model == DeepSeekModel.reasoner || webSearch
                     ? null
                     : onStreamingChanged,
+              ),
+              const SizedBox(width: 8),
+              _StreamChip(
+                label: 'Search',
+                icon: Icons.travel_explore_rounded,
+                enabled: webSearch,
+                glow: false,
+                onChanged: busy || model == DeepSeekModel.reasoner
+                    ? null
+                    : onWebSearchChanged,
               ),
             ],
           ),
@@ -406,8 +454,12 @@ class _StreamChip extends StatefulWidget {
     required this.enabled,
     required this.glow,
     required this.onChanged,
+    this.label = 'Stream',
+    this.icon = Icons.bolt_rounded,
   });
 
+  final String label;
+  final IconData icon;
   final bool enabled;
   final bool glow;
   final ValueChanged<bool>? onChanged;
@@ -456,9 +508,8 @@ class _StreamChipState extends State<_StreamChip>
     return AnimatedBuilder(
       animation: _pulse,
       builder: (context, child) {
-        final glowStrength = widget.enabled && widget.glow
-            ? 0.25 + (_pulse.value * 0.35)
-            : 0.0;
+        final glowStrength =
+            widget.enabled && widget.glow ? 0.25 + (_pulse.value * 0.35) : 0.0;
 
         return Material(
           color: Colors.transparent,
@@ -500,14 +551,14 @@ class _StreamChipState extends State<_StreamChip>
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.bolt_rounded,
+            widget.icon,
             size: 18,
             color:
                 widget.enabled ? StudioColors.accent : StudioColors.textMuted,
           ),
           const SizedBox(width: 6),
           Text(
-            'Stream',
+            widget.label,
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
@@ -616,6 +667,32 @@ class _MessageTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (message.isStatus) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 14, left: 42),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.travel_explore_rounded,
+              size: 16,
+              color: StudioColors.textMuted,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                message.text,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic,
+                  color: StudioColors.textMuted,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     final isUser = message.isUser;
     final streamingAssistant = !isUser && message.streaming;
 
@@ -675,8 +752,7 @@ class _MessageTile extends StatelessWidget {
                 boxShadow: streamingAssistant && emphasizeStreaming
                     ? [
                         BoxShadow(
-                          color:
-                              StudioColors.accent.withValues(alpha: 0.12),
+                          color: StudioColors.accent.withValues(alpha: 0.12),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -860,7 +936,11 @@ class _Message {
     required this.isUser,
     this.streaming = false,
     this.reasoning,
+    this.isStatus = false,
   });
+
+  factory _Message.status(String text) =>
+      _Message._(text: text, isUser: false, isStatus: true);
 
   factory _Message.user(String text) => _Message._(text: text, isUser: true);
 
@@ -880,4 +960,5 @@ class _Message {
   final bool isUser;
   final bool streaming;
   final String? reasoning;
+  final bool isStatus;
 }

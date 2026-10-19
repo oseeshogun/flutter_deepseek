@@ -53,5 +53,5 @@ search to your account.
 Uses `flutter_deepseek` via path `../` while developing the monorepo. For a standalone clone, switch `pubspec.yaml` to:
 
 ```yaml
-flutter_deepseek: ^0.1.1
+flutter_deepseek: ^0.1.2
 ```

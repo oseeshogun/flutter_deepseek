@@ -704,10 +704,10 @@ class _MessageTile extends StatelessWidget {
             isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
           if (!isUser) ...[
-            CircleAvatar(
+            const CircleAvatar(
               radius: 16,
               backgroundColor: StudioColors.accentSoft,
-              child: const Icon(
+              child: Icon(
                 Icons.smart_toy_outlined,
                 size: 18,
                 color: StudioColors.accent,

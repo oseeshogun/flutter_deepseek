@@ -1,6 +1,6 @@
 name: flutter_deepseek
 description: DeepSeek API client for Flutter with SSE streaming, reasoner model, function calling, and typed errors. BYOK.
-version: 0.1.1
+version: 0.1.2
 homepage: https://github.com/HammadAhmad200/flutter_deepseek
 repository: https://github.com/HammadAhmad200/flutter_deepseek
 issue_tracker: https://github.com/HammadAhmad200/flutter_deepseek/issues

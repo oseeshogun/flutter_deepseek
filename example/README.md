@@ -16,6 +16,7 @@ flutter run
 - Model picker: `deepseek-chat` / `deepseek-reasoner`
 - Streaming toggle → `chatStream()` token-by-token UI
 - Non-streaming → `chat()`
+- Web search toggle → `chatWithTools()` with `WebToolExecutor` (non-streaming; each search is shown as a status line)
 - Reasoner → `reason()` with reasoning + answer in one bubble
 - `DeepSeekAuthException` / `DeepSeekRateLimitException` snackbars
 

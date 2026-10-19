@@ -24,6 +24,8 @@ The complete DeepSeek API client for Flutter — true token-by-token streaming, 
 - [Streaming](#quick-start--streaming)
 - [Reasoner](#reasoner-model)
 - [Function calling](#function-calling)
+- [Web search & fetch](#web-search--fetch)
+- [Tool-calling loop](#tool-calling-loop)
 - [Storing the API key in your app](#storing-the-api-key-in-your-app)
 - [Error handling](#error-handling)
 - [Models & utilities](#models)
@@ -158,6 +160,72 @@ final response = await client.chat(
 );
 ```
 
+## Web search & fetch
+
+DeepSeek exposes server-side web tools. Call them directly:
+
+```dart
+final results = await client.search(
+  'latest Flutter release',
+  count: 5,
+  needContent: true, // also return page content
+);
+for (final r in results.results) {
+  print('${r.title} — ${r.url}');
+}
+
+final page = await client.fetch('https://flutter.dev');
+print(page.content); // Markdown
+```
+
+`query` must be 1–128 characters and `count` between 1 and 50. `fetch` accepts
+`http`/`https` URLs of at most 8192 characters. **Each successful request is
+billed by DeepSeek** to your account.
+
+## Tool-calling loop
+
+`chatWithTools` runs the whole loop for you: it sends your tools, executes the
+calls the model makes, sends the results back, and repeats until the model
+answers. Give it a `ToolExecutor`; `WebToolExecutor` exposes `web_search` (and,
+optionally, `fetch_url`) to the model:
+
+```dart
+final executor = WebToolExecutor(client); // search on, fetch off
+
+await for (final event in client.chatWithTools(
+  messages: [ChatMessage.user('Who won the latest F1 race?')],
+  executor: executor,
+)) {
+  switch (event) {
+    case ToolCallRequested(:final call):
+      print('Running ${call.function.name}…');
+    case ToolCallCompleted():
+      break;
+    case ChatAnswer(:final text, :final newMessages):
+      print(text);
+      history.addAll(newMessages); // keep context for the next turn
+  }
+}
+```
+
+Your own tools: implement `ToolExecutor` (`tools` + `execute`). Combine several
+executors with `CompositeToolExecutor([WebToolExecutor(client), MyTools()])`;
+a call goes to the first executor that declares that tool name.
+
+Things to know:
+
+- **Cost is bounded.** `maxRounds` (default 3) limits requests that may use
+  tools, then one last request without tools forces an answer. `maxToolCalls`
+  (default 6) caps total tool calls; extra calls get an error instead of running.
+- **Fetching is off by default** (`enableFetch: false`) because it lets the model
+  read pages you have not vetted.
+- **Prompt injection.** Web results are returned with a note that they are
+  untrusted data. This reduces, but does not remove, the risk that a page
+  steers the model — don't give a web-enabled model tools with side effects
+  you wouldn't trust a stranger to trigger.
+- Each round is non-streaming. Exceptions from the API or your executor
+  propagate through the stream.
+
 ## Error handling
 
 ```dart
@@ -210,6 +278,9 @@ print('${balance.currency} ${balance.totalBalance}');
 | `Future<ReasonerResponse> reason({required prompt, maxTokens})` | Reasoner model with separate reasoning and answer fields. |
 | `Future<List<ModelInfo>> listModels()` | Lists models. |
 | `Future<UserBalance> getBalance()` | Returns account balance. |
+| `Future<SearchResponse> search(query, {count, needContent, oriQuestion, localization})` | Server-side web search (billed). |
+| `Future<FetchResponse> fetch(url)` | Fetches a page as Markdown (billed). |
+| `Stream<ChatEvent> chatWithTools({messages, executor, ...})` | Extension method: tool-calling loop. |
 | `void dispose()` | Closes the underlying `http.Client` when owned by the client. |
 
 ### Key types
@@ -219,6 +290,10 @@ print('${balance.currency} ${balance.totalBalance}');
 - `ReasonerResponse` — `reasoningContent`, `content`, `usage`.
 - `DeepSeekTool` / `FunctionDefinition` — JSON-schema function tools.
 - `TokenUsage`, `ModelInfo`, `UserBalance`, `StreamChunk`.
+- `SearchResponse` / `SearchResult` / `FetchResponse` — web tool results.
+- `ToolExecutor`, `WebToolExecutor`, `CompositeToolExecutor`, `DeepSeekTools` — tools for `chatWithTools`.
+- `ChatEvent` (`ToolCallRequested`, `ToolCallCompleted`, `ChatAnswer`) — events from `chatWithTools`.
+- `ChatMessage.tool(...)` and `ChatMessage.toolCalls` — tool messages in history.
 
 ## Example app
 
@@ -228,7 +303,7 @@ flutter pub get
 flutter run
 ```
 
-The example includes API key entry, model selector, streaming toggle, reasoner display, and error snackbars.
+The example includes API key entry, model selector, streaming toggle, a web search toggle (`chatWithTools`), reasoner display, and error snackbars.
 
 ## Contributing
 
